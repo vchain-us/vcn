@@ -142,28 +142,6 @@ With `--recursive` flag the utility can recursively notarize inner directories.
 ```shell script
 ./vcn n "*.md" --recursive
 ```
-
-### Local API server
-
-It's possible to start a local API server. All commands are supported.
-The notarization password can be submitted with the `x-notarization-password` header.
-
-Example:
-
-```bash
-curl --location --request GET '127.0.0.1:8080/inspect/e2b58ab102dbadb3b1fd5139c8d2a937dc622b1b0d0907075edea163fe2cd093' \
---header 'x-notarization-password: *********' \
---header 'Authorization: Basic ****' \
---header 'Content-Type: application/json' \
---data-raw '{
-	"Kind":		"file",
-	"Name":		"CONTRIBUTING.md",
-	"Hash":		"e2b58ab102dbadb3b1fd5139c8d2a937dc622b1b0d0907075edea163fe2cd093",
-	"Size":		1400,
-	"ContentType":	"text/plain; charset=utf-8"
-}'
-```
-
 ### Notarization
 
 Start with the `login` command. `vcn` will walk you through login and importing up your secret upon initial use.
