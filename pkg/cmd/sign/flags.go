@@ -14,12 +14,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func noArgsWhenHash(cmd *cobra.Command, args []string) error {
+func noArgsWhenHashOrPipe(cmd *cobra.Command, args []string) error {
 	if hash, _ := cmd.Flags().GetString("hash"); hash != "" {
 		if len(args) > 0 {
 			return fmt.Errorf("cannot use ARG(s) with --hash")
 		}
 		return nil
+	}
+	if pipeMode() {
+		return cobra.ExactArgs(0)(cmd, args)
 	}
 	return cobra.ExactArgs(1)(cmd, args)
 }

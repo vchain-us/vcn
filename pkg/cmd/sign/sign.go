@@ -9,6 +9,7 @@
 package sign
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/vchain-us/vcn/pkg/extractor/wildcard"
 	"os"
@@ -78,10 +79,20 @@ Assets are referenced by passed ARG with notarization only accepting
 1 ARG at a time.
 ` + helpMsgFooter,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if pipeMode() {
+				r := bufio.NewReader(os.Stdin)
+				chars, err := r.ReadBytes('\n')
+				if err != nil {
+					return err
+				}
+				args = append(args, string(chars[:len(chars)-1]))
+			}
 			return runSignWithState(cmd, args, meta.StatusTrusted)
 		},
-		Args:    noArgsWhenHash,
-		Example: `./vcn notarize -r "*.md"`,
+		Args: noArgsWhenHashOrPipe,
+		Example: `vcn notarize my-file"
+vcn notarize -r "*.md"
+echo my-file | vcn n`,
 	}
 
 	cmd.Flags().VarP(make(mapOpts), "attr", "a", "add user defined attributes (repeat --attr for multiple entries)")
@@ -216,7 +227,7 @@ func runSignWithState(cmd *cobra.Command, args []string, state meta.Status) erro
 		lcUser = lctmp
 	}
 
-	// use credentials if host is at least host is provided
+	// use credentials if at least ledger compliance host is provided
 	if host != "" {
 		apiKey, err := cli.ProvideLcApiKey()
 		if err != nil {
@@ -418,4 +429,9 @@ func sign(u api.User, a api.Artifact, state meta.Status, visibility meta.Visibil
 	}
 
 	return nil
+}
+
+func pipeMode() bool {
+	fileInfo, _ := os.Stdin.Stat()
+	return fileInfo.Mode()&os.ModeCharDevice == 0
 }
