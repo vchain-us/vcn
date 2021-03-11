@@ -109,14 +109,14 @@ func (u LcUser) createArtifact(artifact Artifact, status meta.Status) (bool, uin
 	aR := artifact.toLcArtifact()
 	aR.Status = status
 
-	aR.Signer = GetSignerIDByApiKey()
+	aR.Signer = GetSignerIDByApiKey(u.Client.ApiKey)
 
 	arJson, err := json.Marshal(aR)
 
 	md := metadata.Pairs(meta.VcnLCPluginTypeHeaderName, meta.VcnLCPluginTypeHeaderValue)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
-	key := AppendPrefix(meta.VcnLCPrefix, []byte(aR.Signer))
+	key := AppendPrefix(meta.VcnPrefix, []byte(aR.Signer))
 	key = AppendSignerId(artifact.Hash, key)
 
 	// @todo use SafeSet when possible. Immudb need to support verifiableExecAll method
@@ -137,10 +137,10 @@ func (u *LcUser) LoadArtifact(hash, signerID string, tx uint64) (lc *LcArtifact,
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	if signerID == "" {
-		signerID = GetSignerIDByApiKey()
+		signerID = GetSignerIDByApiKey(u.Client.ApiKey)
 	}
 
-	key := AppendPrefix(meta.VcnLCPrefix, []byte(signerID))
+	key := AppendPrefix(meta.VcnPrefix, []byte(signerID))
 	key = AppendSignerId(hash, key)
 
 	jsonAr, err := u.Client.VerifiedGetExtAt(ctx, key, tx)

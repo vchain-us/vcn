@@ -7,6 +7,8 @@
  */
 package errors
 
+import "errors"
+
 const AccountNotSynced = `account not yet synced
 
 We are finalizing your account configuration. We will complete the
@@ -52,4 +54,4 @@ Please try again later. If the problem persists contact our support.`
 
 const SignFailed = `method <sign> failed`
 
-const NoLcApiKeyEnv = `no API key configured. Please set the environment variable VCN_LC_API_KEY=<API-KEY> before running vcn login --lc-host`
+var ErrNoLcApiKeyEnv = errors.New(`no API key configured. Please set the environment variable VCN_LC_API_KEY=<API-KEY> or use --lc-api-key flag on each request before running any commands`)

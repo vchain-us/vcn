@@ -11,6 +11,7 @@ package sign
 import (
 	"bufio"
 	"fmt"
+	"github.com/spf13/viper"
 	"github.com/vchain-us/vcn/pkg/extractor/wildcard"
 	"os"
 	"strings"
@@ -77,7 +78,25 @@ Note that your assets will not be uploaded. They will be processed locally.
 
 Assets are referenced by passed ARG with notarization only accepting
 1 ARG at a time.
+
+Environment variables:
+VCN_USER=
+VCN_PASSWORD=
+VCN_NOTARIZATION_PASSWORD=
+VCN_NOTARIZATION_PASSWORD_EMPTY=
+VCN_OTP=
+VCN_OTP_EMPTY=
+VCN_LC_HOST=
+VCN_LC_PORT=
+VCN_LC_CERT=
+VCN_LC_SKIP_TLS_VERIFY=false
+VCN_LC_NO_TLS=false
+VCN_LC_API_KEY=
+
 ` + helpMsgFooter,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return viper.BindPFlags(cmd.Flags())
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if pipeMode() {
 				r := bufio.NewReader(os.Stdin)
@@ -104,9 +123,10 @@ echo my-file | vcn n`,
 	cmd.Flags().BoolP("recursive", "r", false, "if set, wildcard usage will walk inside subdirectories of provided path")
 	cmd.Flags().String("lc-host", "", meta.VcnLcHostFlagDesc)
 	cmd.Flags().String("lc-port", "443", meta.VcnLcPortFlagDesc)
-	cmd.Flags().String("lc-cert", "", meta.VcnLcCertPath)
-	cmd.Flags().Bool("lc-skip-tls-verify", false, meta.VcnLcSkipTlsVerify)
-	cmd.Flags().Bool("lc-no-tls", false, meta.VcnLcNoTls)
+	cmd.Flags().String("lc-cert", "", meta.VcnLcCertPathDesc)
+	cmd.Flags().Bool("lc-skip-tls-verify", false, meta.VcnLcSkipTlsVerifyDesc)
+	cmd.Flags().Bool("lc-no-tls", false, meta.VcnLcNoTlsDesc)
+	cmd.Flags().String("lc-api-key", "", meta.VcnLcApiKeyDesc)
 	cmd.SetUsageTemplate(
 		strings.Replace(cmd.UsageTemplate(), "{{.UseLine}}", "{{.UseLine}} ARG", 1),
 	)
@@ -115,7 +135,6 @@ echo my-file | vcn n`,
 }
 
 func runSignWithState(cmd *cobra.Command, args []string, state meta.Status) error {
-
 	// default extractors options
 	extractorOptions := []extractor.Option{}
 
@@ -196,30 +215,17 @@ func runSignWithState(cmd *cobra.Command, args []string, state meta.Status) erro
 
 	cmd.SilenceUsage = true
 
-	host, err := cmd.Flags().GetString("lc-host")
-	if err != nil {
-		return err
-	}
-	port, err := cmd.Flags().GetString("lc-port")
-	if err != nil {
-		return err
-	}
-	lcCert, err := cmd.Flags().GetString("lc-cert")
-	if err != nil {
-		return err
-	}
-	skipTlsVerify, err := cmd.Flags().GetBool("lc-skip-tls-verify")
-	if err != nil {
-		return err
-	}
-	noTls, err := cmd.Flags().GetBool("lc-no-tls")
-	if err != nil {
-		return err
-	}
+	lcHost := viper.GetString("lc-host")
+	lcPort := viper.GetString("lc-port")
+	lcCert := viper.GetString("lc-cert")
+	skipTlsVerify := viper.GetBool("lc-skip-tls-verify")
+	noTls := viper.GetBool("lc-no-tls")
+	lcApiKey := viper.GetString("lc-api-key")
+
 	//check if an lcUser is present inside the context
 	var lcUser *api.LcUser
 
-	uif, err := api.GetUserFromContext(store.Config().CurrentContext, os.Getenv(meta.VcnLcApiKey))
+	uif, err := api.GetUserFromContext(store.Config().CurrentContext, lcApiKey)
 	if err != nil {
 		return err
 	}
@@ -228,19 +234,13 @@ func runSignWithState(cmd *cobra.Command, args []string, state meta.Status) erro
 	}
 
 	// use credentials if at least ledger compliance host is provided
-	if host != "" {
-		apiKey, err := cli.ProvideLcApiKey()
+	if lcHost != "" && lcApiKey != "" {
+		lcUser, err = api.NewLcUser(lcApiKey, lcHost, lcPort, lcCert, skipTlsVerify, noTls)
 		if err != nil {
 			return err
-		}
-		if apiKey != "" {
-			lcUser, err = api.NewLcUser(apiKey, host, port, lcCert, skipTlsVerify, noTls)
-			if err != nil {
-				return err
-			} // Store the new config
-			if err := store.SaveConfig(); err != nil {
-				return err
-			}
+		} // Store the new config
+		if err := store.SaveConfig(); err != nil {
+			return err
 		}
 	}
 

@@ -11,7 +11,6 @@ package cli
 import (
 	"bufio"
 	"fmt"
-	"github.com/vchain-us/vcn/internal/errors"
 	"os"
 	"strings"
 
@@ -161,18 +160,4 @@ func ProvideOtp() (otp string, err error) {
 		}).Trace("Otp provided (interactive)")
 	}
 	return otp, nil
-}
-
-func ProvideLcApiKey() (ak string, err error) {
-	ak = os.Getenv(meta.VcnLcApiKey)
-	if ak != "" {
-		logs.LOG.Trace("Lc api key provided (environment)")
-		return ak, nil
-	}
-
-	logs.LOG.WithFields(logrus.Fields{
-		"lc-api-key": ak,
-	}).Trace("no lc api key provided (interactive)")
-	return "", fmt.Errorf(errors.NoLcApiKeyEnv)
-
 }

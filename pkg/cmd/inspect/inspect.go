@@ -10,9 +10,9 @@ package inspect
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
 	"github.com/vchain-us/vcn/internal/assert"
 	"github.com/vchain-us/vcn/pkg/meta"
-	"os"
 	"strings"
 
 	"github.com/vchain-us/vcn/pkg/cmd/internal/cli"
@@ -29,9 +29,28 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "inspect",
 		Aliases: []string{"i"},
-		Short:   "Return the asset history with low-level information",
-		Long:    ``,
-		RunE:    runInspect,
+		Short:   "Returns the asset history with low-level information",
+		Long: `
+Returns the asset history with low-level information
+
+Environment variables:
+VCN_USER=
+VCN_PASSWORD=
+VCN_NOTARIZATION_PASSWORD=
+VCN_NOTARIZATION_PASSWORD_EMPTY=
+VCN_OTP=
+VCN_OTP_EMPTY=
+VCN_LC_HOST=
+VCN_LC_PORT=
+VCN_LC_CERT=
+VCN_LC_SKIP_TLS_VERIFY=false
+VCN_LC_NO_TLS=false
+VCN_LC_API_KEY=
+`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return viper.BindPFlags(cmd.Flags())
+		},
+		RunE: runInspect,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if hash, _ := cmd.Flags().GetString("hash"); hash != "" {
 				if len(args) > 0 {
@@ -72,9 +91,11 @@ vcn inspect document.pdf --signerID CygBE_zb8XnprkkO6ncIrbbwYoUq5T1zfyEF6DhqcAI=
 	// ledger compliance flags
 	cmd.Flags().String("lc-host", "", meta.VcnLcHostFlagDesc)
 	cmd.Flags().String("lc-port", "443", meta.VcnLcPortFlagDesc)
-	cmd.Flags().String("lc-cert", "", meta.VcnLcCertPath)
-	cmd.Flags().Bool("lc-skip-tls-verify", false, meta.VcnLcSkipTlsVerify)
-	cmd.Flags().Bool("lc-no-tls", false, meta.VcnLcNoTls)
+	cmd.Flags().String("lc-cert", "", meta.VcnLcCertPathDesc)
+	cmd.Flags().Bool("lc-skip-tls-verify", false, meta.VcnLcSkipTlsVerifyDesc)
+	cmd.Flags().Bool("lc-no-tls", false, meta.VcnLcNoTlsDesc)
+	cmd.Flags().String("lc-api-key", "", meta.VcnLcApiKeyDesc)
+
 	cmd.Flags().String("signerID", "", "specify a signerID to refine inspection result on ledger compliance")
 
 	cmd.Flags().Uint64("first", 0, "set the limit for the first elements filter")
@@ -87,6 +108,7 @@ vcn inspect document.pdf --signerID CygBE_zb8XnprkkO6ncIrbbwYoUq5T1zfyEF6DhqcAI=
 }
 
 func runInspect(cmd *cobra.Command, args []string) error {
+
 	output, err := cmd.Flags().GetString("output")
 	if err != nil {
 		return err
@@ -124,29 +146,16 @@ func runInspect(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	host, err := cmd.Flags().GetString("lc-host")
-	if err != nil {
-		return err
-	}
-	port, err := cmd.Flags().GetString("lc-port")
-	if err != nil {
-		return err
-	}
-	lcCert, err := cmd.Flags().GetString("lc-cert")
-	if err != nil {
-		return err
-	}
-	skipTlsVerify, err := cmd.Flags().GetBool("lc-skip-tls-verify")
-	if err != nil {
-		return err
-	}
-	noTls, err := cmd.Flags().GetBool("lc-no-tls")
-	if err != nil {
-		return err
-	}
+	lcHost := viper.GetString("lc-host")
+	lcPort := viper.GetString("lc-port")
+	lcCert := viper.GetString("lc-cert")
+	skipTlsVerify := viper.GetBool("lc-skip-tls-verify")
+	noTls := viper.GetBool("lc-no-tls")
+	lcApiKey := viper.GetString("lc-api-key")
+
 	//check if an lcUser is present inside the context
 	var lcUser *api.LcUser
-	uif, err := api.GetUserFromContext(store.Config().CurrentContext, os.Getenv(meta.VcnLcApiKey))
+	uif, err := api.GetUserFromContext(store.Config().CurrentContext, lcApiKey)
 	if err != nil {
 		return err
 	}
@@ -155,19 +164,13 @@ func runInspect(cmd *cobra.Command, args []string) error {
 	}
 
 	// use credentials if host is at least host is provided
-	if host != "" {
-		apiKey, err := cli.ProvideLcApiKey()
+	if lcHost != "" && lcApiKey != "" {
+		lcUser, err = api.NewLcUser(lcApiKey, lcHost, lcPort, lcCert, skipTlsVerify, noTls)
 		if err != nil {
 			return err
-		}
-		if apiKey != "" {
-			lcUser, err = api.NewLcUser(apiKey, host, port, lcCert, skipTlsVerify, noTls)
-			if err != nil {
-				return err
-			} // Store the new config
-			if err := store.SaveConfig(); err != nil {
-				return err
-			}
+		} // Store the new config
+		if err := store.SaveConfig(); err != nil {
+			return err
 		}
 	}
 

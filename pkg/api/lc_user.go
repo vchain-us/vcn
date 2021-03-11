@@ -12,9 +12,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	sdk "github.com/vchain-us/ledger-compliance-go/grpcclient"
-	"github.com/vchain-us/vcn/pkg/meta"
 	"github.com/vchain-us/vcn/pkg/store"
-	"os"
 	"strconv"
 )
 
@@ -53,8 +51,7 @@ func (u User) User() *store.User {
 	return nil
 }
 
-func GetSignerIDByApiKey() string {
-	lcApiKey := os.Getenv(meta.VcnLcApiKey)
+func GetSignerIDByApiKey(lcApiKey string) string {
 	hasher := sha256.New()
 	hasher.Write([]byte(lcApiKey))
 	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))

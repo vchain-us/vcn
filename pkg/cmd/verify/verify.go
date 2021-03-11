@@ -10,7 +10,6 @@ package verify
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -70,6 +69,20 @@ ARG must be one of:
   git://<repository>
   docker://<image>
   podman://<image>
+
+Environment variables:
+VCN_USER=
+VCN_PASSWORD=
+VCN_NOTARIZATION_PASSWORD=
+VCN_NOTARIZATION_PASSWORD_EMPTY=
+VCN_OTP=
+VCN_OTP_EMPTY=
+VCN_LC_HOST=
+VCN_LC_PORT=
+VCN_LC_CERT=
+VCN_LC_SKIP_TLS_VERIFY=false
+VCN_LC_NO_TLS=false
+VCN_LC_API_KEY=
 `,
 		RunE: runVerify,
 		PreRun: func(cmd *cobra.Command, args []string) {
@@ -120,9 +133,11 @@ ARG must be one of:
 	cmd.Flags().Int("exit-code", meta.VcnDefaultExitCode, meta.VcnExitCode)
 	cmd.Flags().String("lc-host", "", meta.VcnLcHostFlagDesc)
 	cmd.Flags().String("lc-port", "443", meta.VcnLcPortFlagDesc)
-	cmd.Flags().String("lc-cert", "", meta.VcnLcCertPath)
-	cmd.Flags().Bool("lc-skip-tls-verify", false, meta.VcnLcSkipTlsVerify)
-	cmd.Flags().Bool("lc-no-tls", false, meta.VcnLcNoTls)
+	cmd.Flags().String("lc-cert", "", meta.VcnLcCertPathDesc)
+	cmd.Flags().Bool("lc-skip-tls-verify", false, meta.VcnLcSkipTlsVerifyDesc)
+	cmd.Flags().Bool("lc-no-tls", false, meta.VcnLcNoTlsDesc)
+	cmd.Flags().String("lc-api-key", "", meta.VcnLcApiKeyDesc)
+
 	cmd.Flags().MarkHidden("raw-diff")
 
 	return cmd
@@ -130,7 +145,6 @@ ARG must be one of:
 
 // runVerify first determine if the context is LC or blockchain, then call the correct verify
 func runVerify(cmd *cobra.Command, args []string) error {
-
 	hash, err := cmd.Flags().GetString("hash")
 	if err != nil {
 		return err
@@ -148,29 +162,15 @@ func runVerify(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	host, err := cmd.Flags().GetString("lc-host")
-	if err != nil {
-		return err
-	}
-	port, err := cmd.Flags().GetString("lc-port")
-	if err != nil {
-		return err
-	}
-	lcCert, err := cmd.Flags().GetString("lc-cert")
-	if err != nil {
-		return err
-	}
-	skipTlsVerify, err := cmd.Flags().GetBool("lc-skip-tls-verify")
-	if err != nil {
-		return err
-	}
-	noTls, err := cmd.Flags().GetBool("lc-no-tls")
-	if err != nil {
-		return err
-	}
+	lcHost := viper.GetString("lc-host")
+	lcPort := viper.GetString("lc-port")
+	lcCert := viper.GetString("lc-cert")
+	skipTlsVerify := viper.GetBool("lc-skip-tls-verify")
+	noTls := viper.GetBool("lc-no-tls")
+	lcApiKey := viper.GetString("lc-api-key")
 	//check if an lcUser is present inside the context
 	var lcUser *api.LcUser
-	uif, err := api.GetUserFromContext(store.Config().CurrentContext, os.Getenv(meta.VcnLcApiKey))
+	uif, err := api.GetUserFromContext(store.Config().CurrentContext, lcApiKey)
 	if err != nil {
 		return err
 	}
@@ -179,20 +179,14 @@ func runVerify(cmd *cobra.Command, args []string) error {
 	}
 
 	// use credentials if host is at least host is provided
-	if host != "" {
-		apiKey, err := cli.ProvideLcApiKey()
+	if lcHost != "" && lcApiKey != "" {
+		lcUser, err = api.NewLcUser(lcApiKey, lcHost, lcPort, lcCert, skipTlsVerify, noTls)
 		if err != nil {
 			return err
 		}
-		if apiKey != "" {
-			lcUser, err = api.NewLcUser(apiKey, host, port, lcCert, skipTlsVerify, noTls)
-			if err != nil {
-				return err
-			}
-			// Store the new config
-			if err := store.SaveConfig(); err != nil {
-				return err
-			}
+		// Store the new config
+		if err := store.SaveConfig(); err != nil {
+			return err
 		}
 	}
 

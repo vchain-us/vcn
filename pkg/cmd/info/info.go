@@ -14,6 +14,7 @@ import (
 	"github.com/vchain-us/vcn/pkg/api"
 	"github.com/vchain-us/vcn/pkg/meta"
 	"github.com/vchain-us/vcn/pkg/store"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -57,14 +58,14 @@ Port:			%s
 No-tls:			%t
 Skip-verify-tls:	%t
 Certificate:	%s
-Current signerID:	%s
+Current signerID(if api key env is set):	%s
 `,
 			context.LcHost,
 			context.LcPort,
 			context.LcNoTls,
 			context.LcSkipTlsVerify,
 			context.LcCert,
-			api.GetSignerIDByApiKey(),
+			api.GetSignerIDByApiKey(os.Getenv(meta.VcnLcApiKey)),
 		)
 
 	}

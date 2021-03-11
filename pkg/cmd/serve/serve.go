@@ -10,6 +10,7 @@ package serve
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
 	"net/http"
 
 	"github.com/gorilla/handlers"
@@ -24,7 +25,26 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "Start a local API server",
-		Long:  ``,
+		Long: `Start a local API server
+
+In CodeNotary Ledger Compliance mode api key is required. Provide it using x-notarization-lc-api-key header on each request.
+
+Environment variables:
+VCN_USER=
+VCN_PASSWORD=
+VCN_NOTARIZATION_PASSWORD=
+VCN_NOTARIZATION_PASSWORD_EMPTY=
+VCN_OTP=
+VCN_OTP_EMPTY=
+VCN_LC_HOST=
+VCN_LC_PORT=
+VCN_LC_CERT=
+VCN_LC_SKIP_TLS_VERIFY=false
+VCN_LC_NO_TLS=false
+`,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return viper.BindPFlags(cmd.Flags())
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 			return runServe(cmd)
@@ -38,13 +58,15 @@ func NewCommand() *cobra.Command {
 
 	cmd.Flags().String("lc-host", "", meta.VcnLcHostFlagDesc)
 	cmd.Flags().String("lc-port", "443", meta.VcnLcPortFlagDesc)
-	cmd.Flags().String("lc-cert", "", meta.VcnLcCertPath)
-	cmd.Flags().Bool("lc-skip-tls-verify", false, meta.VcnLcSkipTlsVerify)
-	cmd.Flags().Bool("lc-no-tls", false, meta.VcnLcNoTls)
+	cmd.Flags().String("lc-cert", "", meta.VcnLcCertPathDesc)
+	cmd.Flags().Bool("lc-skip-tls-verify", false, meta.VcnLcSkipTlsVerifyDesc)
+	cmd.Flags().Bool("lc-no-tls", false, meta.VcnLcNoTlsDesc)
+
 	return cmd
 }
 
 func runServe(cmd *cobra.Command) error {
+
 	host, err := cmd.Flags().GetString("host")
 	if err != nil {
 		return nil
@@ -64,26 +86,12 @@ func runServe(cmd *cobra.Command) error {
 		return fmt.Errorf("--tls-cert-file is missing")
 	}
 
-	lcHost, err := cmd.Flags().GetString("lc-host")
-	if err != nil {
-		return err
-	}
-	lcPort, err := cmd.Flags().GetString("lc-port")
-	if err != nil {
-		return err
-	}
-	lcCert, err := cmd.Flags().GetString("lc-cert")
-	if err != nil {
-		return err
-	}
-	skipTlsVerify, err := cmd.Flags().GetBool("lc-skip-tls-verify")
-	if err != nil {
-		return err
-	}
-	noTls, err := cmd.Flags().GetBool("lc-no-tls")
-	if err != nil {
-		return err
-	}
+	lcHost := viper.GetString("lc-host")
+	lcPort := viper.GetString("lc-port")
+	lcCert := viper.GetString("lc-cert")
+	skipTlsVerify := viper.GetBool("lc-skip-tls-verify")
+	noTls := viper.GetBool("lc-no-tls")
+
 	sh := handler{
 		lcHost:          lcHost,
 		lcPort:          lcPort,

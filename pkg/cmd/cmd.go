@@ -11,6 +11,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"syscall"
 
 	"github.com/vchain-us/vcn/pkg/cmd/alert"
@@ -82,7 +83,8 @@ func Execute() {
 func init() {
 
 	// Read in environment variables that match
-	viper.SetEnvPrefix("vcn")
+	viper.SetEnvPrefix(strings.ToUpper(meta.VcnPrefix))
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
 	// Set config files directory based on os.TempDir method ( Linux: /temp/.vcn, Windows: c:\temp, c:\windows\temp )

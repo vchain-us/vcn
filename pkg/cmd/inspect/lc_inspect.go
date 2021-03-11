@@ -65,7 +65,7 @@ func GetLcResults(hash, signerID string, u *api.LcUser, first, last uint64, star
 	if signerID == "" {
 		key = []byte(hash)
 	} else {
-		key = api.AppendPrefix(meta.VcnLCPrefix, []byte(signerID))
+		key = api.AppendPrefix(meta.VcnPrefix, []byte(signerID))
 		key = api.AppendSignerId(hash, key)
 	}
 

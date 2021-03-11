@@ -9,7 +9,6 @@
 package api
 
 import (
-	"fmt"
 	"github.com/vchain-us/vcn/internal/errors"
 	"github.com/vchain-us/vcn/pkg/store"
 )
@@ -24,7 +23,7 @@ func GetUserFromContext(context store.CurrentContext, lcApiKey string) (interfac
 	}
 	if context.LcHost != "" {
 		if lcApiKey == "" {
-			return nil, fmt.Errorf(errors.NoLcApiKeyEnv)
+			return nil, errors.ErrNoLcApiKeyEnv
 		}
 		client, err := NewLcClientByContext(context, lcApiKey)
 		if err != nil {

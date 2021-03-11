@@ -1,23 +1,27 @@
+/*
+ * Copyright (c) 2018-2020 vChain, Inc. All Rights Reserved.
+ * This software is released under GPL3.
+ * The full license information can be found under:
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ */
+
 package login
 
 import (
 	"context"
+	"github.com/vchain-us/vcn/internal/errors"
 	"github.com/vchain-us/vcn/pkg/api"
-	"github.com/vchain-us/vcn/pkg/cmd/internal/cli"
 	"github.com/vchain-us/vcn/pkg/meta"
 	"github.com/vchain-us/vcn/pkg/store"
 	"google.golang.org/grpc/metadata"
 )
 
 // Execute the login action
-func ExecuteLC(host, port, lcCert string, skipTlsVerify, lcNoTls bool) error {
-	apiKey, err := cli.ProvideLcApiKey()
-	if err != nil {
-		return err
-	}
+func ExecuteLC(host, port, lcCert, lcApiKey string, skipTlsVerify, lcNoTls bool) error {
 
-	if apiKey != "" {
-		u, err := api.NewLcUser(apiKey, host, port, lcCert, skipTlsVerify, lcNoTls)
+	if lcApiKey != "" {
+		u, err := api.NewLcUser(lcApiKey, host, port, lcCert, skipTlsVerify, lcNoTls)
 		if err != nil {
 			return err
 		}
@@ -37,6 +41,9 @@ func ExecuteLC(host, port, lcCert string, skipTlsVerify, lcNoTls bool) error {
 				return err
 			}
 		}
+	}
+	if lcApiKey == "" {
+		return errors.ErrNoLcApiKeyEnv
 	}
 	// shouldn't happen
 	return nil
