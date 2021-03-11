@@ -22,7 +22,7 @@ func noArgsWhenHashOrPipe(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 	if pipeMode() {
-		return cobra.ExactArgs(0)(cmd, args)
+		return nil
 	}
 	return cobra.ExactArgs(1)(cmd, args)
 }

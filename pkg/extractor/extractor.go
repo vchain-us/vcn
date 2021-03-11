@@ -10,7 +10,6 @@ package extractor
 
 import (
 	"fmt"
-
 	"github.com/vchain-us/vcn/pkg/api"
 	"github.com/vchain-us/vcn/pkg/uri"
 )
@@ -36,15 +35,23 @@ func Schemes() []string {
 	return schemes
 }
 
-// Extract returns an api.Artifact for the given rawURI.
-func Extract(rawURI string, options ...Option) ([]*api.Artifact, error) {
-	u, err := uri.Parse(rawURI)
-	if err != nil {
-		return nil, err
+// Extract returns an []*api.Artifact for the given rawURIs.
+func Extract(rawURIs []string, options ...Option) ([]*api.Artifact, error) {
+	artifacts := make([]*api.Artifact, 0)
+	for _, ru := range rawURIs {
+		u, err := uri.Parse(ru)
+		if err != nil {
+			return nil, err
+		}
+		if e, ok := extractors[u.Scheme]; ok {
+			ars, err := e(u, options...)
+			if err != nil {
+				return nil, err
+			}
+			artifacts = append(artifacts, ars...)
+		} else {
+			return nil, fmt.Errorf("%s scheme not yet supported", u.Scheme)
+		}
 	}
-
-	if e, ok := extractors[u.Scheme]; ok {
-		return e(u, options...)
-	}
-	return nil, fmt.Errorf("%s scheme not yet supported", u.Scheme)
+	return artifacts, nil
 }

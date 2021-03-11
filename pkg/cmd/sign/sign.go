@@ -99,12 +99,15 @@ VCN_LC_API_KEY=
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if pipeMode() {
-				r := bufio.NewReader(os.Stdin)
-				chars, err := r.ReadBytes('\n')
-				if err != nil {
-					return err
+				scanner := bufio.NewScanner(os.Stdin)
+				scanner.Split(bufio.ScanWords)
+				for scanner.Scan() {
+					token := scanner.Bytes()
+					args = append(args, string(token))
 				}
-				args = append(args, string(chars[:len(chars)-1]))
+				if err := scanner.Err(); err != nil {
+					fmt.Errorf("error parsing stdin input: %s", err)
+				}
 			}
 			return runSignWithState(cmd, args, meta.StatusTrusted)
 		},
@@ -270,7 +273,7 @@ func runSignWithState(cmd *cobra.Command, args []string, state meta.Status) erro
 				artifacts = []*api.Artifact{{Hash: hash}}
 			}
 		} else {
-			artifacts, err = extractor.Extract(args[0], extractorOptions...)
+			artifacts, err = extractor.Extract(args, extractorOptions...)
 			if err != nil {
 				return err
 			}
@@ -305,7 +308,7 @@ func runSignWithState(cmd *cobra.Command, args []string, state meta.Status) erro
 		}
 	} else {
 		// Extract artifact from arg
-		artifacts, err = extractor.Extract(args[0], extractorOptions...)
+		artifacts, err = extractor.Extract(args, extractorOptions...)
 		if err != nil {
 			return err
 		}

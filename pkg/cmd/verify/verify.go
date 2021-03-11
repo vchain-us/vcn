@@ -208,7 +208,7 @@ func runVerify(cmd *cobra.Command, args []string) error {
 			return lcVerify(cmd, a, lcUser, signerID, output)
 		}
 
-		artifacts, err := extractor.Extract(args[0])
+		artifacts, err := extractor.Extract([]string{args[0]})
 		if err != nil {
 			return err
 		}
@@ -282,7 +282,7 @@ func runVerify(cmd *cobra.Command, args []string) error {
 			}
 			alertConfig.Metadata["arg"] = alert.Arg
 
-			artifacts, err := extractor.Extract(alert.Arg)
+			artifacts, err := extractor.Extract([]string{alert.Arg})
 			if err != nil {
 				cli.PrintWarning(output, err.Error())
 				alertConfig.Metadata["error"] = err.Error()
@@ -320,7 +320,7 @@ func runVerify(cmd *cobra.Command, args []string) error {
 
 	// by args
 	for _, arg := range args {
-		artifacts, err := extractor.Extract(arg)
+		artifacts, err := extractor.Extract([]string{arg})
 		if err != nil {
 			return err
 		}

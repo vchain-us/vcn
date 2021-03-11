@@ -220,7 +220,7 @@ func runInspect(cmd *cobra.Command, args []string) error {
 }
 
 func extractInfo(arg string, output string) (hash string, err error) {
-	a, err := extractor.Extract(arg)
+	a, err := extractor.Extract([]string{arg})
 	if err != nil {
 		return "", err
 	}
